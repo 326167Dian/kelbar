@@ -423,15 +423,17 @@ switch($_GET[act]){
 						<?php $no=1;
 							    $tampil_dproyek=mysqli_query($GLOBALS["___mysqli_ston"], "SELECT * FROM barang ORDER BY id_barang ASC");
 								while ($rd=mysqli_fetch_array($tampil_dproyek)){
-								$Q=($rd[hrgjual_barang]-$rd[hrgsat_barang])/$rd[hrgsat_barang];
+								$Q = ($rd['hrgsat_barang'] > 0) ? (($rd[hrgjual_barang]-$rd[hrgsat_barang])/$rd[hrgsat_barang]) : null;
 								$harga1 = format_rupiah($rd['hrgjual_barang']);
 
 
-								echo "<tr style='font-size: 13px;'> 
+								echo "<tr style='font-size: 13px;'>
 										     <td align=center>$no</td>
 											 <td width='20px'>$rd[kd_barang]</td>";
 
-								if( $Q <= 0.3){
+								if ($Q === null) {
+                                        echo" <td align='center'><strong>-</strong></td>";                                                            }
+                                    elseif( $Q <= 0.3){
                                         echo" <td style='background-color:#ff003f;'align='center'><strong>Very Low Profit</strong></td> ";                                                            }
                                     elseif ($Q > 0.3 && $Q <= 1){
                                         echo"  <td style='background-color:#f39c12;' align='center'><strong>Low Profit</strong></td>"; }

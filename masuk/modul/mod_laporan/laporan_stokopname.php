@@ -79,8 +79,74 @@ if (empty($_SESSION['username']) and empty($_SESSION['passuser'])) {
                     </form>
                 </div>
 
+                <div class="box-body">
+                    <p style="text-align:center">Ringkasan Stok Opname 3 bulan terakhir</p>
+                    <table id="example9" class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th>No.</th>
+                                <th>Tanggal SO</th>
+                                <th>Jenis SO</th>
+                                <th>Minus</th>
+                                <th>Lebih</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            $no9 = 1;
+                            $tgl_akhir9 = date('Y-m-d', time());
+                            $tgl_awal9 = date('Y-m-d', strtotime('-120 days', strtotime($tgl_akhir9)));
+
+                            $so9 = mysqli_query($GLOBALS["___mysqli_ston"], "SELECT DISTINCT tgl_stokopname, shift FROM stok_opname
+                                WHERE tgl_stokopname BETWEEN '$tgl_awal9' AND '$tgl_akhir9'
+                                ORDER BY tgl_stokopname DESC, shift ASC");
+                            while ($r9 = mysqli_fetch_array($so9)) {
+                                if ($r9['shift'] == 0) {
+                                    $jenis9 = "SO BULANAN";
+                                } elseif ($r9['shift'] == 1) {
+                                    $jenis9 = "PAGI";
+                                } elseif ($r9['shift'] == 2) {
+                                    $jenis9 = "SORE";
+                                } elseif ($r9['shift'] == 3) {
+                                    $jenis9 = "MALAM";
+                                } else {
+                                    $jenis9 = $r9['shift'];
+                                }
+
+                                $minus9 = mysqli_query($GLOBALS["___mysqli_ston"], "SELECT SUM(ttl_hrgbrg) AS min FROM stok_opname
+                                    WHERE ttl_hrgbrg<0 AND shift='$r9[shift]' AND tgl_stokopname='$r9[tgl_stokopname]'");
+                                $kurang9 = mysqli_fetch_array($minus9);
+                                $kurmin9 = format_rupiah(round($kurang9['min'], 0));
+
+                                $lebih9 = mysqli_query($GLOBALS["___mysqli_ston"], "SELECT SUM(ttl_hrgbrg) AS plus FROM stok_opname
+                                    WHERE ttl_hrgbrg>0 AND shift='$r9[shift]' AND tgl_stokopname='$r9[tgl_stokopname]'");
+                                $lbh9 = mysqli_fetch_array($lebih9);
+                                $plus9 = format_rupiah(round($lbh9['plus'], 0));
+
+                                echo "
+                                <tr>
+                                    <td>$no9</td>
+                                    <td>$r9[tgl_stokopname]</td>
+                                    <td>$jenis9</td>
+                                    <td>Rp. &nbsp; $kurmin9</td>
+                                    <td>Rp. &nbsp; $plus9</td>
+                                </tr>
+                                ";
+                                $no9++;
+                            }
+                            ?>
+                        </tbody>
+                    </table>
+                </div>
+
             </div>
             <script>
+                $(function() {
+                    $("#example9").DataTable({
+                        "order": []
+                    });
+                });
+
                 function exportExcel() {
                     let tgl_awal = $('#tgl_awal').val()
                     let tgl_akhir = $('#tgl_akhir').val()
@@ -211,6 +277,165 @@ if (empty($_SESSION['username']) and empty($_SESSION['passuser'])) {
                     </form>
                 </div>
             </div>
+
+            <div class="box box-primary box-solid">
+                <div class="box-header with-border">
+                    <h3 class="box-title">REKAP PER JENIS OBAT (RAK) - SUDAH/BELUM DICEK</h3>
+                    <div class="box-tools pull-right">
+                        <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+                    </div><!-- /.box-tools -->
+                </div>
+                <div class="box-body table-responsive">
+                    <table id="example8" class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th style="text-align: left; ">Jenis Obat (Rak)</th>
+                                <th style="text-align: center; ">Total Item</th>
+                                <th style="text-align: center; ">Sudah Dicek</th>
+                                <th style="text-align: center; ">Belum Dicek</th>
+                                <th style="text-align: center; ">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            // Rekap per jenisobat (rak) berapa item yang sudah & belum di-stok-opname
+                            // pada rentang tanggal + shift yang sama dengan laporan di atas.
+                            // Item yang dihitung (Total Item) dibatasi stok_barang > 0 saja.
+                            $rekap_jenis = mysqli_query($GLOBALS["___mysqli_ston"], "SELECT b.jenisobat,
+                                                    COUNT(DISTINCT b.id_barang) AS total_item,
+                                                    COUNT(DISTINCT so.id_barang) AS sudah_dicek
+                                                FROM barang b
+                                                LEFT JOIN stok_opname so
+                                                    ON so.id_barang = b.id_barang
+                                                    AND so.shift = '$shift'
+                                                    AND so.tgl_stokopname BETWEEN '$tgl_awal' AND '$tgl_akhir'
+                                                WHERE b.stok_barang > 0
+                                                GROUP BY b.jenisobat
+                                                ORDER BY b.jenisobat ASC");
+
+                            $no3 = 1;
+                            $total_item_semua = 0;
+                            $total_sudah_semua = 0;
+                            $total_belum_semua = 0;
+                            while ($rj = mysqli_fetch_array($rekap_jenis)) {
+                                $namajenis = ($rj['jenisobat'] == '') ? '(Tanpa Jenis Obat)' : $rj['jenisobat'];
+                                $belum_dicek = $rj['total_item'] - $rj['sudah_dicek'];
+
+                                $total_item_semua += $rj['total_item'];
+                                $total_sudah_semua += $rj['sudah_dicek'];
+                                $total_belum_semua += $belum_dicek;
+
+                                $warnabelum = ($belum_dicek > 0) ? "color:#dd4b39;font-weight:bold;" : "";
+                                $linkdetail = "?module=lapstokopname&act=detail_belum_dicek&jenisobat=" . urlencode($rj['jenisobat']) . "&tgl_awal=$tgl_awal&tgl_akhir=$tgl_akhir&shift=$shift";
+
+                                echo "
+                                <tr>
+                                    <td style='text-align:center;'>$no3</td>
+                                    <td>$namajenis</td>
+                                    <td style='text-align:center;'>$rj[total_item]</td>
+                                    <td style='text-align:center;'>$rj[sudah_dicek]</td>
+                                    <td style='text-align:center;$warnabelum'>$belum_dicek</td>
+                                    <td style='text-align:center;'>
+                                        <a class='btn btn-xs btn-primary' target='_blank' href='$linkdetail'>Detail</a>
+                                    </td>
+                                </tr>
+                                ";
+                                $no3++;
+                            }
+                            ?>
+                        </tbody>
+                        <tfoot style="background-color:aqua; font-weight:bold;">
+                            <tr>
+                                <td colspan="2" style="text-align:right;">TOTAL</td>
+                                <td style="text-align:center;"><?= $total_item_semua ?></td>
+                                <td style="text-align:center;"><?= $total_sudah_semua ?></td>
+                                <td style="text-align:center;"><?= $total_belum_semua ?></td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+            <script>
+                $(function() {
+                    $("#example8").DataTable({
+                        "order": [],
+                        "paging": false
+                    });
+                });
+            </script>
+            <?PHP
+            break;
+        case "detail_belum_dicek":
+            $jenisobat = isset($_GET['jenisobat']) ? $_GET['jenisobat'] : '';
+            $tgl_awal = $_GET['tgl_awal'];
+            $tgl_akhir = $_GET['tgl_akhir'];
+            $shift = $_GET['shift'];
+            $namajenis = ($jenisobat == '') ? '(Tanpa Jenis Obat)' : $jenisobat;
+
+            $jenisobatEsc = mysqli_real_escape_string($GLOBALS["___mysqli_ston"], $jenisobat);
+            $tgl_awalEsc = mysqli_real_escape_string($GLOBALS["___mysqli_ston"], $tgl_awal);
+            $tgl_akhirEsc = mysqli_real_escape_string($GLOBALS["___mysqli_ston"], $tgl_akhir);
+            $shiftEsc = mysqli_real_escape_string($GLOBALS["___mysqli_ston"], $shift);
+
+            // Barang stok > 0 di jenisobat (rak) ini yang BELUM punya catatan stok_opname
+            // pada rentang tanggal + shift yang sama dengan laporan.
+            $belum = mysqli_query($GLOBALS["___mysqli_ston"], "SELECT b.* FROM barang b
+                                    WHERE b.jenisobat = '$jenisobatEsc'
+                                        AND b.stok_barang > 0
+                                        AND NOT EXISTS (
+                                            SELECT 1 FROM stok_opname so
+                                            WHERE so.id_barang = b.id_barang
+                                                AND so.shift = '$shiftEsc'
+                                                AND so.tgl_stokopname BETWEEN '$tgl_awalEsc' AND '$tgl_akhirEsc'
+                                        )
+                                    ORDER BY b.nm_barang ASC");
+            ?>
+            <div class="box box-primary box-solid">
+                <div class="box-header with-border">
+                    <h3 class="box-title">BARANG BELUM DICEK - RAK <?= htmlspecialchars($namajenis) ?> (<?= htmlspecialchars($tgl_awal) ?> SD <?= htmlspecialchars($tgl_akhir) ?>)</h3>
+                    <div class="box-tools pull-right">
+                        <button class="btn btn-box-tool" data-widget="collapse"><i class="fa fa-minus"></i></button>
+                    </div><!-- /.box-tools -->
+                </div>
+                <a class='btn btn-danger btn-flat' href='javascript:window.close();'>TUTUP</a>
+                <div class="box-body table-responsive">
+                    <table id="example7" class="table table-bordered table-striped">
+                        <thead>
+                            <tr>
+                                <th>No</th>
+                                <th style="text-align: left; ">Kode Barang</th>
+                                <th style="text-align: left; ">Nama Barang</th>
+                                <th style="text-align: center; ">Satuan</th>
+                                <th style="text-align: center; ">Stok</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            $no4 = 1;
+                            while ($rb = mysqli_fetch_array($belum)) {
+                                echo "
+                                <tr>
+                                    <td style='text-align:center;'>$no4</td>
+                                    <td>$rb[kd_barang]</td>
+                                    <td>$rb[nm_barang]</td>
+                                    <td style='text-align:center;'>$rb[sat_barang]</td>
+                                    <td style='text-align:center;'>$rb[stok_barang]</td>
+                                </tr>
+                                ";
+                                $no4++;
+                            }
+                            ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <script>
+                $(function() {
+                    $("#example7").DataTable();
+                });
+            </script>
             <?PHP
             break;
         case "sinkron_min":

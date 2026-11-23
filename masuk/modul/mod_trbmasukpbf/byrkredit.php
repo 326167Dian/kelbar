@@ -248,8 +248,9 @@ switch($_GET[act]){
 	
 	case "ubah":
 	//cek apakah ada kode transaksi ON berdasarkan user
-	$ubah=mysqli_query($GLOBALS["___mysqli_ston"], "SELECT * FROM trbmasuk 
-	WHERE trbmasuk.id_trbmasuk='$_GET[id]'");
+	$id_trbmasuk_get = mysqli_real_escape_string($GLOBALS["___mysqli_ston"], $_GET['id']);
+	$ubah=mysqli_query($GLOBALS["___mysqli_ston"], "SELECT * FROM trbmasuk
+	WHERE trbmasuk.id_trbmasuk='$id_trbmasuk_get'");
 	$re=mysqli_fetch_array($ubah);
        
         echo "
