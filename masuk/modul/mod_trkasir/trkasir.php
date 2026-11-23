@@ -10,16 +10,6 @@ if (empty($_SESSION['username']) and empty($_SESSION['passuser'])) {
 	switch ($_GET['act']) {
 			// Tampil Penjualan
 		default:
-			$tgl_awal = date('Y-m-d');
-			$tampil_trkasir = mysqli_query($GLOBALS["___mysqli_ston"], "SELECT * FROM trkasir  
-        where tgl_trkasir ='$tgl_awal' order by id_trkasir desc ");
-
-
-			/*$tgl_awal = date('Y-m-d');
-      $tgl_akhir = date('Y-m-d', strtotime('-7 days', strtotime( $tgl_awal)));
-      $tampil_trkasir = mysqli_query($GLOBALS["___mysqli_ston"], "SELECT * FROM trkasir  
-        where tgl_trkasir between '$tgl_akhir' and '$tgl_awal'ORDER BY tgl_trkasir desc ") ;*/
-
 ?>
 
 
@@ -45,7 +35,7 @@ if (empty($_SESSION['username']) and empty($_SESSION['passuser'])) {
 					<br><br>
 
 
-					<table id="example1" class="table table-bordered table-striped">
+					<table id="tabel_trkasir_hariini" class="table table-bordered table-striped">
 						<thead align="center">
 							<tr>
 								<th>No</th>
@@ -61,181 +51,112 @@ if (empty($_SESSION['username']) and empty($_SESSION['passuser'])) {
 							</tr>
 						</thead>
 						<tbody>
-							<?php
-							$no = 1;
-							$tgl_awal = date('Y-m-d');
-							while ($r = mysqli_fetch_array($tampil_trkasir)) {
-								$ttl_trkasir = $r['ttl_trkasir'];
-								$ttl_trkasir2 = format_rupiah($ttl_trkasir);
-								$ttljual += $ttl_trkasir;
-								$ttljual1 = format_rupiah($ttljual);
-
-								$total = "SELECT id_trkasir, kd_trkasir, SUM(ttl_trkasir)as ttlskrg1                                                              
-                                        FROM trkasir WHERE tgl_trkasir='$tgl_awal'";
-								$tunai = "SELECT id_trkasir, kd_trkasir, SUM(ttl_trkasir)as ttlskrg2                                                              
-                                        FROM trkasir WHERE tgl_trkasir='$tgl_awal' AND id_carabayar='1'";
-								$transfer = "SELECT trkasir.id_trkasir, trkasir.kd_trkasir, SUM(trkasir.ttl_trkasir) as ttlskrg3
-                                        FROM trkasir JOIN carabayar ON trkasir.id_carabayar=carabayar.id_carabayar
-                                        WHERE trkasir.tgl_trkasir='$tgl_awal' AND LOWER(carabayar.nm_carabayar) LIKE '%transfer%'";
-								$tempo = "SELECT id_trkasir, kd_trkasir, SUM(ttl_trkasir)as ttlskrg4                                                              
-                                        FROM trkasir WHERE tgl_trkasir='$tgl_awal' AND id_carabayar='3'";
-								$shift1 = "SELECT id_trkasir, kd_trkasir, SUM(ttl_trkasir)as ttlshift1                                                              
-                                        FROM trkasir WHERE tgl_trkasir='$tgl_awal' AND shift=1 ";
-								$shift1tunai = "SELECT id_trkasir, kd_trkasir, SUM(ttl_trkasir)as ttlshift1tunai                                                              
-                                        FROM trkasir WHERE tgl_trkasir='$tgl_awal' AND shift=1 and id_carabayar='1' ";
-								$shift1transfer = "SELECT trkasir.id_trkasir, trkasir.kd_trkasir, SUM(trkasir.ttl_trkasir) as ttlshift1transfer
-                                        FROM trkasir JOIN carabayar ON trkasir.id_carabayar=carabayar.id_carabayar
-                                        WHERE trkasir.tgl_trkasir='$tgl_awal' AND trkasir.shift=1 AND LOWER(carabayar.nm_carabayar) LIKE '%transfer%'";
-								$shift1tempo = "SELECT id_trkasir, kd_trkasir, SUM(ttl_trkasir)as ttlshift1tempo                                                              
-                                        FROM trkasir WHERE tgl_trkasir='$tgl_awal' AND shift=1 and id_carabayar=3 ";
-								$shift2 = "SELECT id_trkasir, kd_trkasir, SUM(ttl_trkasir)as ttlshift2                                                              
-                                        FROM trkasir WHERE tgl_trkasir='$tgl_awal' AND shift=2 ";
-								$shift2tunai = "SELECT id_trkasir, kd_trkasir, SUM(ttl_trkasir)as ttlshift2tunai                                                              
-                                        FROM trkasir WHERE tgl_trkasir='$tgl_awal' AND shift=2 and id_carabayar=1";
-								$shift2transfer = "SELECT trkasir.id_trkasir, trkasir.kd_trkasir, SUM(trkasir.ttl_trkasir) as ttlshift2transfer
-                                        FROM trkasir JOIN carabayar ON trkasir.id_carabayar=carabayar.id_carabayar
-                                        WHERE trkasir.tgl_trkasir='$tgl_awal' AND trkasir.shift=2 AND LOWER(carabayar.nm_carabayar) LIKE '%transfer%'";
-								$shift2tempo = "SELECT id_trkasir, kd_trkasir, SUM(ttl_trkasir)as ttlshift2tempo                                                              
-                                        FROM trkasir WHERE tgl_trkasir='$tgl_awal' AND shift=2 and id_carabayar=3";
-
-								$query2 = mysqli_query($GLOBALS["___mysqli_ston"], $total);
-								$query3 = mysqli_query($GLOBALS["___mysqli_ston"], $tunai);
-								$query4 = mysqli_query($GLOBALS["___mysqli_ston"], $transfer);
-								$query5 = mysqli_query($GLOBALS["___mysqli_ston"], $tempo);
-								$query6 = mysqli_query($GLOBALS["___mysqli_ston"], $shift1);
-								$query6tunai = mysqli_query($GLOBALS["___mysqli_ston"], $shift1tunai);
-								$query6transfer = mysqli_query($GLOBALS["___mysqli_ston"], $shift1transfer);
-								$query6tempo = mysqli_query($GLOBALS["___mysqli_ston"], $shift1tempo);
-								$query7 = mysqli_query($GLOBALS["___mysqli_ston"], $shift2);
-								$query7tunai = mysqli_query($GLOBALS["___mysqli_ston"], $shift2tunai);
-								$query7transfer = mysqli_query($GLOBALS["___mysqli_ston"], $shift2transfer);
-								$query7tempo = mysqli_query($GLOBALS["___mysqli_ston"], $shift2tempo);
-
-
-								$r2 = mysqli_fetch_array($query2);
-								$ttlskrg = $r2['ttlskrg1'];
-								$ttlskrg2 = format_rupiah($ttlskrg);
-
-								$r3 = mysqli_fetch_array($query3);
-								$ttltunai = $r3['ttlskrg2'];
-								$ttltunai2 = format_rupiah($ttltunai);
-
-								$r4 = mysqli_fetch_array($query4);
-								$ttltransfer = $r4['ttlskrg3'];
-								$ttltransfer2 = format_rupiah($ttltransfer);
-
-								$r5 = mysqli_fetch_array($query5);
-								$ttltempo = $r5['ttlskrg4'];
-								$ttltempo2 = format_rupiah($ttltempo);
-
-								$r6 = mysqli_fetch_array($query6);
-								$ttlshift1 = $r6['ttlshift1'];
-								$ttlshiftx = format_rupiah($ttlshift1);
-
-								$r6tunai = mysqli_fetch_array($query6tunai);
-								$ttlshift1tunai = $r6tunai['ttlshift1tunai'];
-								$ttlshiftxtunai = format_rupiah($ttlshift1tunai);
-
-								$r6transfer = mysqli_fetch_array($query6transfer);
-								$ttlshift1transfer = $r6transfer['ttlshift1transfer'];
-								$ttlshiftxtransfer = format_rupiah($ttlshift1transfer);
-
-								$r6tempo = mysqli_fetch_array($query6tempo);
-								$ttlshift1tempo = $r6tempo['ttlshift1tempo'];
-								$ttlshiftxtempo = format_rupiah($ttlshift1tempo);
-
-								$r7 = mysqli_fetch_array($query7);
-								$ttlshift2 = $r7['ttlshift2'];
-								$ttlshifty = format_rupiah($ttlshift2);
-
-								$r7tunai = mysqli_fetch_array($query7tunai);
-								$ttlshift2tunai = $r7tunai['ttlshift2tunai'];
-								$ttlshiftytunai = format_rupiah($ttlshift2tunai);
-
-								$r7transfer = mysqli_fetch_array($query7transfer);
-								$ttlshift2transfer = $r7transfer['ttlshift2transfer'];
-								$ttlshiftytransfer = format_rupiah($ttlshift2transfer);
-
-								$r7tempo = mysqli_fetch_array($query7tempo);
-								$ttlshift2tempo = $r7tempo['ttlshift2tempo'];
-								$ttlshiftytempo = format_rupiah($ttlshift2tempo);
-
-								if ($r['id_carabayar'] == 3) {
-									echo "<td style='background-color:#ffbf00;'>$no</td>
-											 <td style='background-color:#ffbf00;'>$r[kd_trkasir]</td>";
-								} else {
-									echo "<td>$no</td>
-                                                <td>$r[kd_trkasir]";
-								}
-								echo "     
-										
-											<td>$r[petugas]</td>
-											<td>$r[tgl_trkasir]</td>	
-											<td>$r[nm_pelanggan]</td>";
-								$cabay = mysqli_query(
-									$GLOBALS["___mysqli_ston"],
-									"SELECT * FROM trkasir JOIN carabayar on trkasir.id_carabayar = carabayar.id_carabayar WHERE trkasir.kd_trkasir ='$r[kd_trkasir]'"
-								);
-								$cabay1 = mysqli_fetch_array($cabay);
-
-								echo "
-											<td align='center'>$cabay1[nm_carabayar]</td>";
-								echo "
-											<td align=right>$ttl_trkasir2</td>
-											<td align=right>$r[shift]</td>
-											<td align='center'>";
-								$lupa = $_SESSION['level'];
-								if ($lupa == 'pemilik') {
-									echo " <a href='?module=trkasir&act=ubah&id=$r[id_trkasir]' title='EDIT' class='glyphicon glyphicon-pencil'>&nbsp</a>
-									         <a href=javascript:confirmdelete('$aksi?module=trkasir&act=hapus&id=$r[id_trkasir]') title='HAPUS' class='glyphicon glyphicon-remove'>&nbsp</a>                                            
-									        ";
-								}
-							?>
-								<a class='glyphicon glyphicon-print' onclick="window.open('modul/mod_laporan/struk.php?kd_trkasir=<?php echo $r['kd_trkasir'] ?>',
-                                            'nama window','width=500,height=600,toolbar=no,location=no,directories=no,status=no,menubar=no, ' +
-                                            'scrollbars=no,resizable=yes,copyhistory=no')">&nbsp</a>
-                                <a class='btn btn-success btn-xs' onclick="window.open('modul/mod_laporan/strukresep.php?kd_trkasir=<?php echo $r['kd_trkasir'] ?>',
-                                            'nama window','width=500,height=600,toolbar=no,location=no,directories=no,status=no,menubar=no, ' +
-                                            'scrollbars=no,resizable=yes,copyhistory=no')">Resep</a>
-                                <a href='modul/mod_laporan/kwitansi.php?kd_trkasir=<?php echo $r['kd_trkasir'] ?>' target='_blank' title='KWITANSI' class='btn btn-warning btn-xs'>KWITANSI</a>
-                                <?php
-
-								echo "</td>
-										</tr>";
-								$no++;
-							}
-							echo "</tbody>
+						</tbody>
+						<tfoot>
                             <tr>
-                                <td colspan='3'><strong>Tunai Rp. $ttltunai2 </strong>  </td>
-                                <td colspan='2'><strong> Transfer Rp. $ttltransfer2   ,- </strong></td> 
-                                <td colspan='2'><strong> Tempo Rp. $ttltempo2  ,- </strong></td> 
+                                <td colspan='3'><strong>Tunai Rp. <span id="ttlTunai">0</span></strong></td>
+                                <td colspan='2'><strong>Transfer Rp. <span id="ttlTransfer">0</span> ,-</strong></td>
+                                <td colspan='2'><strong>Tempo Rp. <span id="ttlTempo">0</span> ,-</strong></td>
                             </tr>
                             <tr>
-                                <td colspan='5'><strong><center>Total shift 1 = Rp. $ttlshiftx                                 
-                                                           <br> Tunai Rp. $ttlshiftxtunai                                                            
-                                                           <br> Transfer Rp. $ttlshiftxtransfer
-                                                           <br> Tempo Rp. $ttlshiftxtempo</center> </strong> </td>
-                                <td colspan='2'><strong>Total shift 2 = Rp. $ttlshifty
-                                                            <br> Tunai Rp. $ttlshiftytunai
-                                                            <br> Transfer Rp. $ttlshiftytransfer
-                                                            <br> Tempo Rp. $ttlshiftytempo </strong></td> 
+                                <td colspan='5'><strong><center>Total shift 1 = Rp. <span id="ttlShift1">0</span>
+                                                           <br> Tunai Rp. <span id="ttlShift1Tunai">0</span>
+                                                           <br> Transfer Rp. <span id="ttlShift1Transfer">0</span>
+                                                           <br> Tempo Rp. <span id="ttlShift1Tempo">0</span></center> </strong> </td>
+                                <td colspan='2'><strong>Total shift 2 = Rp. <span id="ttlShift2">0</span>
+                                                            <br> Tunai Rp. <span id="ttlShift2Tunai">0</span>
+                                                            <br> Transfer Rp. <span id="ttlShift2Transfer">0</span>
+                                                            <br> Tempo Rp. <span id="ttlShift2Tempo">0</span> </strong></td>
                             </tr><tr>
                                 <td colspan='5'><h3><center>Total Hari ini</center></h3>  </td>
-                                <td colspan='2'> <h3><strong> Rp. $ttlskrg2  ,- </strong></h3></td> 
+                                <td colspan='2'> <h3><strong> Rp. <span id="ttlHariIni">0</span> ,- </strong></h3></td>
                             </tr>
-                        </table>";
-							?>
+						</tfoot>
+					</table>
 				</div>
                 <a  class ='btn  btn-success btn-flat' href='modul/mod_lapstok/sinkronisasi_stok.php'>SINKRONISASI</a>
                 <strong>Klik Sinkronisasi sebelum tutup shift</strong>
 			</div>
-			
-            <?php 
+
+			<script>
+			    $(document).ready(function() {
+			        $("#tabel_trkasir_hariini").DataTable({
+			            processing: true,
+			            serverSide: true,
+			            ajax: {
+			                "url": "modul/mod_trkasir/penjualanhariini_serverside.php?action=table_data",
+			                "dataType": "JSON",
+			                "type": "POST"
+			            },
+			            "rowCallback": function(row, data, index) {
+			                if (data['tempo'] == 1) {
+			                    $(row).find('td:eq(0)').css('background-color', '#ffbf00');
+			                    $(row).find('td:eq(1)').css('background-color', '#ffbf00');
+			                }
+			            },
+			            columns: [{
+			                    "data": "no",
+			                    "className": 'text-center'
+			                },
+			                {
+			                    "data": "kd_trkasir"
+			                },
+			                {
+			                    "data": "petugas"
+			                },
+			                {
+			                    "data": "tgl_trkasir",
+			                    "className": 'text-center'
+			                },
+			                {
+			                    "data": "nm_pelanggan",
+			                    "className": 'text-center'
+			                },
+			                {
+			                    "data": "nm_carabayar",
+			                    "className": 'text-center'
+			                },
+			                {
+			                    "data": "ttl_trkasir",
+			                    "className": 'text-right',
+			                    "render": function(data, type, row) {
+			                        return type === 'display' ? formatRupiah(data) : data;
+			                    }
+			                },
+			                {
+			                    "data": "shift",
+			                    "className": 'text-right'
+			                },
+			                {
+			                    "data": "pilih",
+			                    "className": 'text-center'
+			                },
+			            ],
+			            "footerCallback": function(row, data, start, end, display) {
+			                let json = this.api().ajax.json();
+			                $('#ttlTunai').text(formatRupiah(json.totalTunai));
+			                $('#ttlTransfer').text(formatRupiah(json.totalTransfer));
+			                $('#ttlTempo').text(formatRupiah(json.totalTempo));
+			                $('#ttlShift1').text(formatRupiah(json.totalShift1));
+			                $('#ttlShift1Tunai').text(formatRupiah(json.totalTunaiPagi));
+			                $('#ttlShift1Transfer').text(formatRupiah(json.totalTransferPagi));
+			                $('#ttlShift1Tempo').text(formatRupiah(json.totalTempoPagi));
+			                $('#ttlShift2').text(formatRupiah(json.totalShift2));
+			                $('#ttlShift2Tunai').text(formatRupiah(json.totalTunaiSore));
+			                $('#ttlShift2Transfer').text(formatRupiah(json.totalTransferSore));
+			                $('#ttlShift2Tempo').text(formatRupiah(json.totalTempoSore));
+			                $('#ttlHariIni').text(formatRupiah(json.totalKasir));
+			            }
+			        });
+			    });
+			</script>
+
+            <?php
             if($_SESSION['komisi']=='Y' AND $_SESSION['level']=='petugas'){
-                $querykomisi = mysqli_query($GLOBALS["___mysqli_ston"], "SELECT SUM(ttl_komisi) as total_komisi FROM komisi_pegawai  
+                $querykomisi = mysqli_query($GLOBALS["___mysqli_ston"], "SELECT SUM(ttl_komisi) as total_komisi FROM komisi_pegawai
                     where status_komisi ='on' AND id_admin = '$_SESSION[idadmin]'");
                 $rk = mysqli_fetch_array($querykomisi);
-                
+
                 echo "<h4><b>Total Komisi Anda Saat Ini = Rp ".format_rupiah($rk['total_komisi'])."</b></h4>";
 			}
 			?>

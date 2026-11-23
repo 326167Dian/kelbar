@@ -41,7 +41,8 @@
 			//AMBIL DATA UNTUK FOOTER
 			$dfoot = mysqli_query($GLOBALS["___mysqli_ston"], "SELECT * FROM orders WHERE kd_trbmasuk='$kd_trbmasuk'");
 			$rf = mysqli_fetch_array($dfoot);
-			$dp_bayar = format_rupiah($rf['dp_bayar']);
+			// Baris header 'orders' belum tentu ada - baru dibuat saat SIMPAN TRANSAKSI diklik.
+			$dp_bayar = format_rupiah($rf ? $rf['dp_bayar'] : 0);
 
 			$sumprice = mysqli_query($GLOBALS["___mysqli_ston"], "SELECT kd_trbmasuk, SUM(hrgttl_dtrbmasuk) as grandnya FROM ordersdetail 
 							WHERE kd_trbmasuk='$kd_trbmasuk'");
