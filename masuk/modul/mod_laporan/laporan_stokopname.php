@@ -214,22 +214,33 @@ if (empty($_SESSION['username']) and empty($_SESSION['passuser'])) {
             <?PHP
             break;
         case "sinkron_min":
-            $tgl_awal = $_GET['tgl_awal'];
-            $tgl_akhir = $_GET['tgl_akhir'];
-            $shift = $_GET['shift'];
+            $tgl_awal = mysqli_real_escape_string($GLOBALS["___mysqli_ston"], $_GET['tgl_awal']);
+            $tgl_akhir = mysqli_real_escape_string($GLOBALS["___mysqli_ston"], $_GET['tgl_akhir']);
+            $shift = mysqli_real_escape_string($GLOBALS["___mysqli_ston"], $_GET['shift']);
             $kdunik = date('dmyHis');
             $kdtransaksi = "MINUS-" . $kdunik;
             $petugas = $_SESSION['namalengkap'];
 
-            $sominus = $db->query("SELECT * FROM stok_opname 
+            mysqli_begin_transaction($GLOBALS["___mysqli_ston"]);
+            $gagal = false;
+            $dilewati = array();
+
+            $sominus = $db->query("SELECT * FROM stok_opname
                 WHERE ttl_hrgbrg<0 and shift='$shift' and tgl_stokopname between '$tgl_awal' and '$tgl_akhir' ");
-            $no1 = 1;
-            while ($so = $sominus->fetch_array()) {
-                $barang = $db->query("select nm_barang,sat_barang,hrgjual_barang from barang where id_barang='$so[id_barang]' ");
+            while (!$gagal && ($so = $sominus->fetch_array())) {
+                $barang = $db->query("select nm_barang,sat_barang,hrgjual_barang,stok_barang from barang where id_barang='$so[id_barang]' ");
                 $brg = $barang->fetch_array();
+
+                if (!$brg) {
+                    // barang sudah dihapus dari master barang, lewati baris opname ini
+                    $dilewati[] = $so['kd_barang'];
+                    continue;
+                }
+
                 $qtymin = abs($so['selisih']);
                 $hrgtot = $brg['hrgjual_barang'] * $qtymin;
-                mysqli_query($GLOBALS["___mysqli_ston"], "insert into trkasir_detail(
+
+                $ok1 = mysqli_query($GLOBALS["___mysqli_ston"], "insert into trkasir_detail(
                                 kd_trkasir,
                                 id_barang,
                                 kd_barang,
@@ -248,16 +259,24 @@ if (empty($_SESSION['username']) and empty($_SESSION['passuser'])) {
                                 '$brg[hrgjual_barang]',
                                 '$hrgtot')
                ");
-                $no1++;
+
+                // kurangi stok fisik sesuai selisih minus, sama seperti simpandetail_trkasir.php
+                $stokakhir = $brg['stok_barang'] - $qtymin;
+                $ok2 = mysqli_query($GLOBALS["___mysqli_ston"], "UPDATE barang SET stok_barang = '$stokakhir' WHERE id_barang = '$so[id_barang]'");
+
+                if (!$ok1 || !$ok2) {
+                    $gagal = true;
+                }
             }
 
-            $tglharini = date('Y-m-d');
-            $cekshift = mysqli_query($GLOBALS["___mysqli_ston"], "select * from waktukerja where tanggal = '$tglharini'
-            and status='ON' ");
-            $sshift = mysqli_fetch_array($cekshift);
-            $shiftin = $sshift['shift'];
+            if (!$gagal) {
+                $tglharini = date('Y-m-d');
+                $cekshift = mysqli_query($GLOBALS["___mysqli_ston"], "select * from waktukerja where tanggal = '$tglharini'
+                and status='ON' ");
+                $sshift = mysqli_fetch_array($cekshift);
+                $shiftin = $sshift['shift'];
 
-            mysqli_query($GLOBALS["___mysqli_ston"], "insert into trkasir(
+                $okheader = mysqli_query($GLOBALS["___mysqli_ston"], "insert into trkasir(
                                 kd_trkasir,
                                 petugas,
                                 shift,
@@ -271,26 +290,50 @@ if (empty($_SESSION['username']) and empty($_SESSION['passuser'])) {
                                 '$tglharini',
                                 'SINKRONISASI MINUS',
                                 '1')
-            ");
+                ");
+                if (!$okheader) {
+                    $gagal = true;
+                }
+            }
 
-            echo '<script>window.location.href = "?module=trkasir";</script>';
+            if ($gagal) {
+                mysqli_rollback($GLOBALS["___mysqli_ston"]);
+                echo "<script>alert('Sinkronisasi minus gagal, semua perubahan dibatalkan.'); window.history.back();</script>";
+            } else {
+                mysqli_commit($GLOBALS["___mysqli_ston"]);
+                if (count($dilewati) > 0) {
+                    $pesandilewati = addslashes('Sinkronisasi minus berhasil, tapi ' . count($dilewati) . ' barang dilewati karena sudah tidak ada di master barang: ' . implode(', ', $dilewati));
+                    echo "<script>alert('$pesandilewati'); window.location.href = '?module=trkasir';</script>";
+                } else {
+                    echo '<script>window.location.href = "?module=trkasir";</script>';
+                }
+            }
             break;
         case "sinkron_plus":
-            $tgl_awal = $_GET['tgl_awal'];
-            $tgl_akhir = $_GET['tgl_akhir'];
-            $shift = $_GET['shift'];
+            $tgl_awal = mysqli_real_escape_string($GLOBALS["___mysqli_ston"], $_GET['tgl_awal']);
+            $tgl_akhir = mysqli_real_escape_string($GLOBALS["___mysqli_ston"], $_GET['tgl_akhir']);
+            $shift = mysqli_real_escape_string($GLOBALS["___mysqli_ston"], $_GET['shift']);
             $kdunik = date('dmyHis');
             $kdtransaksi = "PLUS-" . $kdunik;
             $petugas = $_SESSION['namalengkap'];
 
-            $soplus = $db->query("SELECT * FROM stok_opname 
+            mysqli_begin_transaction($GLOBALS["___mysqli_ston"]);
+            $gagal = false;
+            $dilewati = array();
+
+            $soplus = $db->query("SELECT * FROM stok_opname
                 WHERE selisih>0 and shift='$shift' and tgl_stokopname between '$tgl_awal' and '$tgl_akhir' ");
-            $no1 = 1;
-            while ($so = $soplus->fetch_array()) {
-                $barang = $db->query("select nm_barang,sat_barang from barang where id_barang='$so[id_barang]' ");
+            while (!$gagal && ($so = $soplus->fetch_array())) {
+                $barang = $db->query("select nm_barang,sat_barang,stok_barang from barang where id_barang='$so[id_barang]' ");
                 $brg = $barang->fetch_array();
 
-                mysqli_query($GLOBALS["___mysqli_ston"], "insert into trbmasuk_detail(
+                if (!$brg) {
+                    // barang sudah dihapus dari master barang, lewati baris opname ini
+                    $dilewati[] = $so['kd_barang'];
+                    continue;
+                }
+
+                $ok1 = mysqli_query($GLOBALS["___mysqli_ston"], "insert into trbmasuk_detail(
                                 kd_trbmasuk,
                                 id_barang,
                                 kd_barang,
@@ -309,15 +352,23 @@ if (empty($_SESSION['username']) and empty($_SESSION['passuser'])) {
                                 '$so[hrgsat_barang]',
                                 '$so[ttl_hrgbrg]')
                ");
-                $no1++;
+
+                // tambah stok fisik sesuai selisih plus, sama seperti simpandetail_tbm.php
+                $stokakhir = $brg['stok_barang'] + $so['selisih'];
+                $ok2 = mysqli_query($GLOBALS["___mysqli_ston"], "UPDATE barang SET stok_barang = '$stokakhir' WHERE id_barang = '$so[id_barang]'");
+
+                if (!$ok1 || !$ok2) {
+                    $gagal = true;
+                }
             }
 
-            $tglharini = date('Y-m-d');
+            if (!$gagal) {
+                $tglharini = date('Y-m-d');
 
-            mysqli_query($GLOBALS["___mysqli_ston"], "insert into trbmasuk(
+                $okheader = mysqli_query($GLOBALS["___mysqli_ston"], "insert into trbmasuk(
                                 id_resto,
                                 kd_trbmasuk,
-                                petugas,                                
+                                petugas,
                                 tgl_trbmasuk,
                                 id_supplier,
                                 nm_supplier,
@@ -328,12 +379,28 @@ if (empty($_SESSION['username']) and empty($_SESSION['passuser'])) {
                                 '$kdtransaksi',
                                 '$petugas',
                                 '$tglharini',
-                                '0',                                
+                                '0',
                                 'SINKRONISASI PLUS',
                                 'TUNAI',
                                 'nonpbf')
-            ");
-            echo '<script>window.location.href = "?module=byrkredit";</script>';
+                ");
+                if (!$okheader) {
+                    $gagal = true;
+                }
+            }
+
+            if ($gagal) {
+                mysqli_rollback($GLOBALS["___mysqli_ston"]);
+                echo "<script>alert('Sinkronisasi plus gagal, semua perubahan dibatalkan.'); window.history.back();</script>";
+            } else {
+                mysqli_commit($GLOBALS["___mysqli_ston"]);
+                if (count($dilewati) > 0) {
+                    $pesandilewati = addslashes('Sinkronisasi plus berhasil, tapi ' . count($dilewati) . ' barang dilewati karena sudah tidak ada di master barang: ' . implode(', ', $dilewati));
+                    echo "<script>alert('$pesandilewati'); window.location.href = '?module=byrkredit';</script>";
+                } else {
+                    echo '<script>window.location.href = "?module=byrkredit";</script>';
+                }
+            }
             break;
     }
 }

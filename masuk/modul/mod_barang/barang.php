@@ -320,6 +320,40 @@ if (empty($_SESSION['username']) and empty($_SESSION['passuser'])) {
 	});
 </script>
 <script>
+	var daftarJenisObat = <?= json_encode(array_column(mysqli_fetch_all(mysqli_query($GLOBALS["___mysqli_ston"], "SELECT jenisobat FROM jenis_obat ORDER BY jenisobat ASC"), MYSQLI_ASSOC), 'jenisobat')) ?>;
+
+	function simpanJenisObat(sel) {
+		let id_barang = $(sel).data('id');
+		let jenisobat = sel.value;
+		let oldValue = $(sel).data('old');
+
+		$.ajax({
+			type: 'post',
+			url: 'modul/mod_barang/update_jenisobat.php',
+			data: {
+				id_barang: id_barang,
+				jenisobat: jenisobat
+			},
+			dataType: 'json',
+			success: function(res) {
+				if (res.success) {
+					$(sel).data('old', jenisobat);
+					$(sel).css('background-color', '#d4edda');
+					setTimeout(function() {
+						$(sel).css('background-color', '');
+					}, 1000);
+				} else {
+					alert('Gagal menyimpan: ' + res.message);
+					sel.value = oldValue;
+				}
+			},
+			error: function() {
+				alert('Gagal menghubungi server.');
+				sel.value = oldValue;
+			}
+		});
+	}
+
 	$(document).ready(function() {
 		$('#tes').DataTable({
 			processing: true,
@@ -370,7 +404,25 @@ if (empty($_SESSION['username']) and empty($_SESSION['passuser'])) {
 				},
 				{
 					"data": "jenisobat",
-					"className": 'text-center'
+					"className": 'text-center',
+					"render": function(data, type, row) {
+						if (type !== 'display') return data;
+
+						var options = '';
+						var adaDiMaster = false;
+						daftarJenisObat.forEach(function(j) {
+							var sel = (j === data) ? ' selected' : '';
+							if (j === data) adaDiMaster = true;
+							var label = (j === '') ? '(kosong)' : j;
+							options += "<option value=\"" + j + "\"" + sel + ">" + label + "</option>";
+						});
+						if (!adaDiMaster) {
+							var labelLama = (data === '') ? '(kosong)' : data;
+							options = "<option value=\"" + data + "\" selected>" + labelLama + "</option>" + options;
+						}
+
+						return "<select class='form-control input-sm' style='width:auto;display:inline-block;' data-id='" + row.aksi + "' data-old='" + data + "' onchange='simpanJenisObat(this)'>" + options + "</select>";
+					}
 				},
 				{
 					"data": "hrgsat_barang",

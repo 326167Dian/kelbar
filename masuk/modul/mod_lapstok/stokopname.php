@@ -21,6 +21,59 @@ if (empty($_SESSION['username']) and empty($_SESSION['passuser'])) {
                 </div>
                 <div class="box-body">
 
+                    <?php
+                    $ceksstok = mysqli_query($GLOBALS["___mysqli_ston"], "SELECT COUNT(*) AS x FROM barang WHERE stok_barang > 0");
+                    $jumlahStokAda = mysqli_fetch_array($ceksstok)['x'];
+                    echo "<div class='alert alert-info'>Jumlah barang dengan stok lebih dari 0 : <b>$jumlahStokAda</b> item</div>";
+
+                    $cekjenisobat = mysqli_query($GLOBALS["___mysqli_ston"], "
+                        SELECT b.jenisobat, COUNT(*) AS jumlah
+                        FROM barang b
+                        LEFT JOIN jenis_obat j ON j.jenisobat = b.jenisobat
+                        WHERE j.jenisobat IS NULL
+                        GROUP BY b.jenisobat
+                        ORDER BY b.jenisobat ASC
+                    ");
+
+                    if (mysqli_num_rows($cekjenisobat) > 0) {
+                        echo "<div class='alert alert-warning'>";
+                        echo "<b>Perhatian:</b> ditemukan barang dengan field <b>jenisobat</b> (rak) yang tidak terdaftar di tabel Jenis Obat / Rak Obat, sehingga tidak akan muncul di dropdown rak manapun saat stok opname:";
+                        echo "<ul style='margin-top:8px;'>";
+                        while ($ja = mysqli_fetch_array($cekjenisobat)) {
+                            $labelJenisobat = ($ja['jenisobat'] === '') ? '(kosong)' : htmlspecialchars($ja['jenisobat']);
+                            echo "<li>Jenis Obat $labelJenisobat — $ja[jumlah] item";
+                            echo "<details style='margin:4px 0 8px 16px;'><summary style='cursor:pointer;'>Lihat daftar barang</summary><ul>";
+                            $itemBarang = mysqli_query($GLOBALS["___mysqli_ston"], "SELECT kd_barang, nm_barang FROM barang WHERE jenisobat = '" . mysqli_real_escape_string($GLOBALS["___mysqli_ston"], $ja['jenisobat']) . "' ORDER BY nm_barang ASC");
+                            while ($ib = mysqli_fetch_array($itemBarang)) {
+                                echo "<li>" . htmlspecialchars($ib['kd_barang']) . " - " . htmlspecialchars($ib['nm_barang']) . "</li>";
+                            }
+                            echo "</ul></details>";
+                            echo "</li>";
+                        }
+                        echo "</ul>";
+                        echo "</div>";
+                    }
+
+                    $cekjenisobatTakTerpakai = mysqli_query($GLOBALS["___mysqli_ston"], "
+                        SELECT j.jenisobat, j.ket
+                        FROM jenis_obat j
+                        LEFT JOIN barang b ON b.jenisobat = j.jenisobat
+                        WHERE b.jenisobat IS NULL
+                        ORDER BY j.jenisobat ASC
+                    ");
+
+                    if (mysqli_num_rows($cekjenisobatTakTerpakai) > 0) {
+                        echo "<div class='alert alert-warning'>";
+                        echo "<b>Perhatian:</b> ditemukan Jenis Obat / Rak Obat di tabel Jenis Obat yang belum dipakai barang apa pun:";
+                        echo "<ul style='margin-top:8px;'>";
+                        while ($jt = mysqli_fetch_array($cekjenisobatTakTerpakai)) {
+                            echo "<li><b>" . htmlspecialchars($jt['jenisobat']) . "</b> — " . htmlspecialchars($jt['ket']) . "</li>";
+                        }
+                        echo "</ul>";
+                        echo "</div>";
+                    }
+                    ?>
+
                     <form method="POST" action="modul/mod_laporan/tampil_stokopname.php" target="_blank" enctype="multipart/form-data" class="form-horizontal">
 
                         </br></br>
@@ -56,9 +109,10 @@ if (empty($_SESSION['username']) and empty($_SESSION['passuser'])) {
 
                                 <select name='jenisobat' id='jenisobat' class='form-control'>";
                                     <?php
-                                    $tampil = mysqli_query($GLOBALS["___mysqli_ston"], "SELECT * FROM jenis_obat ORDER BY jenisobat ASC");
+                                    $tampil = mysqli_query($GLOBALS["___mysqli_ston"], "SELECT DISTINCT jenisobat FROM barang ORDER BY jenisobat ASC");
                                     while ($rk = mysqli_fetch_array($tampil)) {
-                                        echo "<option value='$rk[jenisobat]'>$rk[jenisobat]</option>";
+                                        $labelrak = ($rk['jenisobat'] === '') ? '(kosong)' : $rk['jenisobat'];
+                                        echo "<option value='$rk[jenisobat]'>$labelrak</option>";
                                     }
                                     ?>
                                 </select>
