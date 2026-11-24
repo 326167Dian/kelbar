@@ -1539,7 +1539,7 @@ if (empty($_SESSION['username']) and empty($_SESSION['passuser'])) {
               break;
         case "edit":
             $jokul = $_GET['id'];
-           
+
             $k = mysqli_query($GLOBALS["___mysqli_ston"], "select * from barang where kd_barang='$jokul'");
             $k2 = mysqli_fetch_assoc($k);
             $w = $k2['nm_barang'];
@@ -1547,25 +1547,26 @@ if (empty($_SESSION['username']) and empty($_SESSION['passuser'])) {
 
             $jual = "SELECT *
             FROM trkasir_detail join trkasir on (trkasir_detail.kd_trkasir=trkasir.kd_trkasir)
-            WHERE kd_barang =$jokul order by trkasir.tgl_trkasir desc ";
+            WHERE kd_barang =$jokul order by trkasir.tgl_trkasir desc, trkasir.id_trkasir desc ";
             $penjualan = mysqli_query($GLOBALS["___mysqli_ston"], $jual);
-            
-           
-       
 
+            // total keluar dihitung sekali lewat SUM, bukan diakumulasi manual di dalam loop baris.
+            $totalkeluar = mysqli_query($GLOBALS["___mysqli_ston"], "SELECT SUM(qty_dtrkasir) AS ttl FROM trkasir_detail WHERE kd_barang =$jokul");
+            $ttlklr = mysqli_fetch_assoc($totalkeluar);
+            $ttl_keluar = $ttlklr['ttl'];
 
         ?>
 
             <div class='box box-primary box-solid table-responsive'>
                 <div class='box-header with-border'>
-                    <h3 class='box-title'><?php echo "Riwayat Penjualan $w (stok = $w2)"; ?></h3>
+                    <h3 class='box-title'><?php echo "Riwayat Penjualan $w (stok = $w2) dengan Total Keluar $ttl_keluar"; ?></h3>
                     <div class='box-tools pull-right'>
                         <button class='btn btn-box-tool' data-widget='collapse'><i class='fa fa-minus'></i></button>
                     </div><!-- /.box-tools -->
                 </div>
 
                 <div class='box-body'>
-                    <table id="example1" class="table table-condensed table-bordered table-striped table-hover">
+                    <table id="tblRiwayatJual" class="table table-condensed table-bordered table-striped table-hover">
                         <thead>
                             <tr>
                                 <th style="text-align: center; ">No Transaksi</th>
@@ -1575,6 +1576,7 @@ if (empty($_SESSION['username']) and empty($_SESSION['passuser'])) {
                                 <th style="text-align: center; ">Tanggal</th>
                                 <th style="text-align: center; ">Waktu</th>
                                 <th style="text-align: center; ">Keluar</th>
+                                <th style="text-align: center; ">Nilai</th>
                                 <th style="text-align: center; ">No Batch</th>
                                 <th style="text-align: center; ">Exp Date</th>
 
@@ -1588,19 +1590,22 @@ if (empty($_SESSION['username']) and empty($_SESSION['passuser'])) {
                                  $text1 = substr($text, 10,2);
                                  $text2 = substr($text, 12,2);
                                  $text3 = substr($text, 14,2);
+                                 $hrgjual = format_rupiah($r['hrgjual_dtrkasir']);
+                                 $nilaijual = format_rupiah($r['hrgttl_dtrkasir']);
                                 echo "
                             <tr>
                                 <td align=center>$text</td>
                                 <td align=center>$r[nm_pelanggan]</td>
                                 <td align=center>$r[petugas]</td>
-                                <td align=center>$r[hrgjual_dtrkasir]</td> 
-                                <td align=center>$r[tgl_trkasir]</td> 
+                                <td align=center>$hrgjual</td>
+                                <td align=center>$r[tgl_trkasir]</td>
                                 <td align=center>$text1.$text2.$text3</td>
                                 <td align=center>$r[qty_dtrkasir]</td>
+                                <td align=right>$nilaijual</td>
                                 <td align=center>$r[no_batch]</td>
                                 <td align=center>$r[exp_date]</td>
-                                 
-                               
+
+
 
                             </tr>";
                             }
@@ -1619,38 +1624,48 @@ if (empty($_SESSION['username']) and empty($_SESSION['passuser'])) {
                 trbmasuk.kd_trbmasuk,
                 trbmasuk.nm_supplier,
                 trbmasuk.petugas,
+                trbmasuk_detail.id_dtrbmasuk,
                 trbmasuk_detail.nmbrg_dtrbmasuk,
                 trbmasuk_detail.sat_dtrbmasuk,
                 trbmasuk_detail.qty_dtrbmasuk,
+                trbmasuk_detail.hnasat_dtrbmasuk,
+                trbmasuk_detail.diskon,
                 trbmasuk_detail.hrgsat_dtrbmasuk,
+                trbmasuk_detail.hrgttl_dtrbmasuk,
                 trbmasuk_detail.no_batch,
                 trbmasuk_detail.exp_date
                 FROM trbmasuk_detail join trbmasuk on (trbmasuk_detail.kd_trbmasuk=trbmasuk.kd_trbmasuk)
-                WHERE kd_barang =$jokul order by trbmasuk.tgl_trbmasuk desc ";
+                WHERE kd_barang =$jokul order by trbmasuk.tgl_trbmasuk desc, trbmasuk_detail.id_dtrbmasuk desc ";
             $pembelian = mysqli_query($GLOBALS["___mysqli_ston"], $beli);
 
-
+            // total masuk dihitung sekali lewat SUM, bukan diakumulasi manual di dalam loop baris.
+            $totalmasuk = mysqli_query($GLOBALS["___mysqli_ston"], "SELECT SUM(qty_dtrbmasuk) AS ttl FROM trbmasuk_detail WHERE kd_barang =$jokul");
+            $ttlmsk = mysqli_fetch_assoc($totalmasuk);
+            $ttl_masuk = $ttlmsk['ttl'];
 
             ?>
             <div class='box box-primary box-solid table-responsive'>
                 <div class='box-header with-border'>
-                    <h3 class='box-title'><?php echo "Riwayat Pembelian $w"; ?></h3>
+                    <h3 class='box-title'><?php echo "Riwayat Pembelian $w dengan Total Masuk $ttl_masuk"; ?></h3>
                     <div class='box-tools pull-right'>
                         <button class='btn btn-box-tool' data-widget='collapse'><i class='fa fa-minus'></i></button>
                     </div><!-- /.box-tools -->
                 </div>
 
                 <div class='box-body'>
-                    <table id="example1" class="table table-condensed table-bordered table-striped table-hover">
+                    <table id="tblRiwayatBeli" class="table table-condensed table-bordered table-striped table-hover">
                         <thead>
                             <tr>
                                 <th style="text-align: center; ">No Transaksi</th>
                                 <th style="text-align: center; ">Suplier</th>
                                 <th style="text-align: center; ">Petugas Input</th>
+                                <th style="text-align: center; ">HNA</th>
+                                <th style="text-align: center; ">Diskon(%)</th>
                                 <th style="text-align: center; ">Harga Beli</th>
                                 <th style="text-align: center; ">Tanggal</th>
                                 <th style="text-align: center; ">Waktu</th>
                                 <th style="text-align: center; ">Masuk</th>
+                                <th style="text-align: center; ">Nilai</th>
                                 <th style="text-align: center; ">No Batch</th>
                                 <th style="text-align: center; ">Exp Date</th>
 
@@ -1663,19 +1678,24 @@ if (empty($_SESSION['username']) and empty($_SESSION['passuser'])) {
                                  $text1 = substr($text, 10,2);
                                  $text2 = substr($text, 12,2);
                                  $text3 = substr($text, 14,2);
-                                $qw= round($q['hrgsat_dtrbmasuk'],0);
+                                $hna = format_rupiah(round($q['hnasat_dtrbmasuk'],0));
+                                $qw= format_rupiah(round($q['hrgsat_dtrbmasuk'],0));
+                                $nilaimasuk = format_rupiah($q['hrgttl_dtrbmasuk']);
                                 echo "
                             <tr>
-                                <td align=center >$q[kd_trbmasuk]</td>                          
+                                <td align=center >$q[kd_trbmasuk]</td>
                                 <td align=center>$q[nm_supplier]</td>
                                 <td align=center>$q[petugas]</td>
-                                <td align=center>$qw</td> 
+                                <td align=center>$hna</td>
+                                <td align=center>$q[diskon]</td>
+                                <td align=center>$qw</td>
                                 <td align=center>$q[tgl_trbmasuk]</td>
-                                <td align=center>$text1.$text2.$text3</td>                               
+                                <td align=center>$text1.$text2.$text3</td>
                                 <td align=center>$q[qty_dtrbmasuk]</td>
+                                <td align=right>$nilaimasuk</td>
                                 <td align=center>$q[no_batch]</td>
                                 <td align=center>$q[exp_date]</td>
-                               
+
 
                             </tr>";
                             }
@@ -1689,6 +1709,16 @@ if (empty($_SESSION['username']) and empty($_SESSION['passuser'])) {
 
             </div>
         <input style="text-align:center;" class='btn btn-success' type='button' value=KEMBALI onclick=self.history.back()>
+            <script type="text/javascript">
+                $(function() {
+                    $("#tblRiwayatJual").DataTable({
+                        "order": []
+                    });
+                    $("#tblRiwayatBeli").DataTable({
+                        "order": []
+                    });
+                });
+            </script>
 <?php
 
 
